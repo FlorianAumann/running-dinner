@@ -1,8 +1,15 @@
 """This class handles all request to the google API"""
 import json
+import urllib
+
 import httplib2
 
 from src.data.geoLocation import GeoLocation
+
+
+"""Helper method for download_path_map"""
+def geoloc_to_string(geolocation: GeoLocation):
+    return str(geolocation.latitude) + "," + str(geolocation.longitude)
 
 
 class GoogleApi:
@@ -120,3 +127,30 @@ class GoogleApi:
             raise Exception('Field "latitude" or "longitude" not found')
 
         return GeoLocation(latitude, longitude)
+
+    def download_path_map(self, locations: [GeoLocation], color: str, active_index: int, dest_path: str):
+        """ Creates a map visualizing a path through all given locations
+        Will create a path with the given color
+        Will store the retrieved map file under the given file destination
+
+        @param: locations All locations of the path
+        @param: color The color of the path, as string with color name
+        @param: active_index The index of the location in locations to highlight
+        @param: dest_path The file location to store the result to
+        """
+        url = "https://maps.googleapis.com/maps/api/staticmap?size=1000x1000&scale=2"
+        url += "&path=color:0x" + color + "|weight:3"
+        for location in locations:
+            url += "|" + geoloc_to_string(location)
+
+        # Add label to each location, mark the active one in a different color
+        for i in range(len(locations)):
+            if i == active_index:
+                url += "&markers=color:red"
+            else:
+                url += "&markers=color:blue"
+            url += "%7Clabel:" + str(i + 1) + "%7C" + geoloc_to_string(locations[i])
+
+        url += "&key=" + self.__api_key
+        # Retrieve map and save as image file under give path
+        urllib.request.urlretrieve(url, dest_path)
