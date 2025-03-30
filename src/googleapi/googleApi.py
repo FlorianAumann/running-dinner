@@ -2,6 +2,8 @@
 import json
 import httplib2
 
+from src.data.geoLocation import GeoLocation
+
 
 class GoogleApi:
     __api_key: str
@@ -73,3 +75,48 @@ class GoogleApi:
             raise Exception('Field "value" of "duration" not found')
 
         return duration_value
+
+    def get_geolocation_from_address(self, address) -> GeoLocation:
+        """ Retrieves geolocation (Latitude / longitude) for a given address
+
+        @param: address The address as string
+        """
+        url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + address + "&key=" + self.__api_key
+        h = httplib2.Http()
+        resp, content = h.request(url, "GET")
+        if resp.status != 200:
+            raise Exception('getGeoLocationFromAddress: Invalid response: ' + str(resp.status))
+
+        json_obj = json.loads(content)
+
+        status = json_obj["status"]
+        if status is None:
+            raise Exception('Field "status" not found')
+
+        # Sanity check return status
+        if status != "OK":
+            error_msg = json_obj["error_message"]
+            raise Exception(f'Invalid status with message \"{error_msg}\"')
+
+        results = json_obj["results"]
+        if results is None:
+            raise Exception('Field "results" not found')
+        first_row = results[0]
+
+        if first_row is None:
+            raise Exception('FirstRow not found')
+
+        geometry = first_row["geometry"]
+        if geometry is None:
+            raise Exception('Field "geometry" not found')
+
+        location = geometry["location"]
+        if location is None:
+            raise Exception('Field "location" not found')
+
+        latitude = location["lat"]
+        longitude = location["lng"]
+        if latitude is None or longitude is None:
+            raise Exception('Field "latitude" or "longitude" not found')
+
+        return GeoLocation(latitude, longitude)
