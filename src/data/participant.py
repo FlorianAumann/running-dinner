@@ -1,8 +1,9 @@
+"""This class represents a single participant in the running dinner"""
+
+
 class Participant(object):
-    address = ''
-    email = ''
-    firstName = ''
-    lastName = ''
-    phone = ''
-    vegetarian = True
-    allergies = ''
+    email: str
+    firstName: str
+    lastName: str
+    phone: str
+    food_restrictions: str
