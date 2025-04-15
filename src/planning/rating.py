@@ -19,6 +19,38 @@ class SolutionRater(object):
         pass
 
 
+class CombinedSolutionRater(SolutionRater):
+    """
+    Combines multiple weighted solution raters together
+    """
+
+    def __init__(self, solution_raters: [(float, SolutionRater)]):
+        """
+        :param solution_raters: A list of solution raters together with their respective weights
+        """
+        if not solution_raters:
+            raise ValueError("List of solution raters can not be empty!")
+        self.solution_raters = solution_raters
+        # Make sure all weights are positive floating point numbers
+        if next(weight <= 0 for (weight, rater) in solution_raters):
+            raise ValueError("All weights must be positive numbers!")
+        # Pre-calculate the total sum of all weights so we don't have to calculate it on every pass
+        self.total_weight = reduce(lambda x, y: x + y, map(lambda item: item[0], solution_raters))
+
+    def rate_solution(self, paths_per_host: {int: [int]}) -> float:
+        """
+        Rate a given solution using all the raters and assign it a score between 0 and 1
+
+        :param paths_per_host: The solution to rate
+        :return: A score between 0 and 1
+        """
+        # Pass the solution through each solution rater and multiply the score by the raters weight
+        # Then add together all the weighted ratings
+        score = reduce(lambda x, y: x + y, map(lambda item: item[0] * item[1].rate_solution(paths_per_host), self.solution_raters))
+        # Divide by total weight again to get a score in [0,1] and return
+        return score / self.total_weight
+
+
 class DiversitySolutionRater(SolutionRater):
     """
     Rates dinner group diversity of a given solution. The more different teams each team meets along the way, the
