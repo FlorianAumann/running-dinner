@@ -102,15 +102,14 @@ class Solution(object):
         return array_equal(self.groups_per_course, other.groups_per_course)
 
     def __copy__(self):
-        return type(self)(self.indices_host, self.indices_visit)
+        return type(self)(self.groups_per_course)
 
     def __deepcopy__(self, memo):
         id_self = id(self)
         _copy = memo.get(id_self)
         if _copy is None:
             _copy = type(self)(
-                deepcopy(self.indices_host, memo),
-                deepcopy(self.indices_visit, memo))
+                deepcopy(self.groups_per_course, memo))
             memo[id_self] = _copy
         return _copy
 
