@@ -7,6 +7,9 @@ from numpy import array_equal
 from src.config import ConfigManager
 from src.data.geoLocation import GeoLocation
 from src.googleapi.googleApi import GoogleApi
+from src.planning.optimizer import GeneticOptimizerWithFinalLocation, COURSE_COUNT
+from src.planning.rating import DiversitySolutionRater, SolutionRater, CombinedSolutionRater, \
+    FinalLocationDistanceSolutionRater, InterDistanceSolutionRater
 from src.planning.solution import DinnerGroup, Solution
 from src.xlsx.xlsxInput import read_teams_from_xlsx
 
@@ -72,7 +75,77 @@ class Optimizer(unittest.TestCase):
                              [DinnerGroup(7, [2, 1]), DinnerGroup(5, [1, 0]), DinnerGroup(2, [0, 2])]]
         test_solution = Solution(groups_per_course)
         paths_per_host = test_solution.get_paths_per_host()
-        expected_paths_per_host = {4: [4, 6, 7], 1: [1, 0, 5], 3: [3, 8, 2], 6: [4, 6, 5], 0: [1, 0, 7], 8: [3, 8, 2], 7: [4, 0, 7], 5: [3, 8, 5], 2: [1, 6, 2]}
+        expected_paths_per_host = {4: [4, 6, 7], 1: [1, 0, 5], 3: [3, 8, 2], 6: [4, 6, 5], 0: [1, 0, 7], 8: [3, 8, 2],
+                                   7: [4, 0, 7], 5: [3, 8, 5], 2: [1, 6, 2]}
         print(paths_per_host)
         self.assertTrue(array_equal(expected_paths_per_host, paths_per_host))
 
+
+class Rating(unittest.TestCase):
+    def test_rate_combined(self):
+        # Test 1 error on empty list
+        self.assertRaises(ValueError, CombinedSolutionRater, [])
+
+        # Test 2 Default use case
+        # Create a dummy rater class that always returns a fixed
+        class DummySolutionRater(SolutionRater):
+            def __init__(self, value: float):
+                self.value = value
+
+            def rate_solution(self, paths_per_host: {int: [int]}) -> float:
+                return self.value
+
+        raters = [(1, DummySolutionRater(1)), (4, DummySolutionRater(0.5)), (15, DummySolutionRater(0))]
+        rater = CombinedSolutionRater(raters)
+        # Rate a solution with the dummy raters and check against expected value
+        paths_per_host = {0: [0, 1], 1: [0, 1], 2: [2, 3], 3: [2, 3]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 0.15, places=3)
+
+    def test_rate_diversity(self):
+        rater = DiversitySolutionRater()
+        # Test #1 Rate worst case 2 courses
+        paths_per_host = {0: [0, 1], 1: [0, 1], 2: [2, 3], 3: [2, 3]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 0, places=3)
+        # Test #2 Rate best case 2 courses
+        paths_per_host = {0: [0, 1], 1: [2, 1], 2: [2, 3], 3: [0, 3]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 1, places=3)
+        # Test #3 Rate worst case 3 courses
+        paths_per_host = {5: [5, 6, 7], 1: [1, 0, 4], 3: [3, 8, 2], 6: [5, 6, 7], 0: [1, 0, 4], 8: [3, 8, 2],
+                          7: [5, 6, 7], 4: [1, 0, 4], 2: [3, 8, 2]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 0, places=3)
+        # Test #4 Rate best case 3 courses
+        paths_per_host = {0: [0, 1, 2], 1: [3, 1, 4], 2: [3, 5, 2], 3: [3, 6, 8], 4: [0, 5, 4], 5: [7, 5, 8],
+                          6: [0, 6, 8], 7: [7, 1, 4], 8: [7, 6, 2]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 1, places=3)
+
+    def test_rate_inter_distance(self):
+        distance_matrix = [[0, 1, 2, 24, 35, 5, 22, 5, 1],
+                           [1, 0, 9, 9, 9, 9, 99, 9, 9],
+                           [2, 9, 0, 97, 97, 87, 97, 2, 33],
+                           [24, 9, 97, 0, 8, 8, 8, 8, 8],
+                           [35, 9, 97, 8, 0, 53, 63, 63, 63],
+                           [5, 9, 87, 8, 63, 0, 55, 54, 5],
+                           [22, 9, 97, 8, 63, 55, 0, 25, 99],
+                           [5, 9, 2, 8, 63, 54, 25, 0, 51],
+                           [1, 9, 33, 8, 63, 5, 99, 51, 0]]
+        rater = InterDistanceSolutionRater(distance_matrix, 3)
+        # Test #1 Rate worst case 3 courses
+        paths_per_host = {0: [2, 3, 0], 1: [1, 6, 8], 2: [2, 3, 0], 3: [2, 3, 0], 4: [4, 7, 5], 5: [4, 7, 5],
+                          6: [1, 6, 8], 7: [4, 7, 5], 8: [1, 6, 8]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 0, places=3)
+        # Test #2 Rate best case 3 courses
+        paths_per_host = {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2], 3: [5, 8, 3], 4: [6, 7, 4], 5: [5, 8, 3],
+                          6: [6, 7, 4], 7: [6, 7, 4], 8: [5, 8, 3]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 1, places=3)
+
+    def test_rate_dist_to_final_location(self):
+        dst_to_final_location = [63, 95, 96, 8, 99, 78, 63, 105, 52]
+        rater = FinalLocationDistanceSolutionRater(dst_to_final_location, 3)
+        # Test #1 Rate worst case 3 courses
+        paths_per_host = {5: [5, 6, 7], 1: [1, 0, 4], 3: [3, 8, 2], 6: [5, 6, 7], 0: [1, 0, 4], 8: [3, 8, 2],
+                          7: [5, 6, 7], 4: [1, 0, 4], 2: [3, 8, 2]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 0, places=3)
+        # Test #2 Rate best case 3 courses
+        paths_per_host = {5: [5, 6, 0], 1: [1, 7, 3], 4: [4, 2, 8], 6: [5, 6, 0], 7: [1, 7, 3], 2: [4, 2, 8],
+                          0: [5, 6, 0], 3: [1, 7, 3], 8: [4, 2, 8]}
+        self.assertAlmostEqual(rater.rate_solution(paths_per_host), 1, places=3)
