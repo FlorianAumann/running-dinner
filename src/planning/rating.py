@@ -49,7 +49,8 @@ class CombinedSolutionRater(SolutionRater):
         """
         # Pass the solution through each solution rater and multiply the score by the raters weight
         # Then add together all the weighted ratings
-        score = reduce(lambda x, y: x + y, map(lambda item: item[0] * item[1].rate_solution(paths_per_host), self.solution_raters))
+        score = reduce(lambda x, y: x + y,
+                       map(lambda item: item[0] * item[1].rate_solution(paths_per_host), self.solution_raters))
         # Divide by total weight again to get a score in [0,1] and return
         return score / self.total_weight
 
@@ -73,7 +74,8 @@ class DiversitySolutionRater(SolutionRater):
             for team2 in range(len(paths_per_host)):
                 if team1 != team2:
                     # Get intersection between both team's paths
-                    intersections = collections.Counter(paths_per_host[team1]) & collections.Counter(paths_per_host[team2])
+                    intersections = collections.Counter(paths_per_host[team1]) & collections.Counter(
+                        paths_per_host[team2])
                     # If more than one intersection exists, add additional intersection to count
                     if len(intersections) > 1:
                         overlaps += (len(intersections) - 1)
@@ -82,7 +84,7 @@ class DiversitySolutionRater(SolutionRater):
         teams_per_course_count = len(paths_per_host)
         maximum_overlaps = (course_count - 1) * (course_count - 1) * teams_per_course_count
         # Normalize this score to be between 0 and 1
-        # Then subtract it from 1.0, so it gets better the less overlaps we have
+        # Then subtract it from 1.0, so it gets better the fewer overlaps we have
         # In the end, square the result so bad solutions decrease the result exponentially, not linearly
         score = (1.0 - (overlaps / maximum_overlaps)) ** 2
         return score
@@ -124,7 +126,10 @@ class FinalLocationDistanceSolutionRater(SolutionRater):
             path = paths_per_host[team]
             last_location = path[-1]
             squared_distance += self.dist_to_final_loc[last_location] ** 2
-        return 1.0 - ((squared_distance - self.min_squared_distance) / (self.max_squared_distance - self.min_squared_distance))
+        # Normalize this score to be between 0 and 1
+        # Then subtract it from 1.0, so it gets better the shorter the squared distances
+        return 1.0 - ((squared_distance - self.min_squared_distance) / (
+                self.max_squared_distance - self.min_squared_distance))
 
 
 class InterDistanceSolutionRater(SolutionRater):

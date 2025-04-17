@@ -65,7 +65,8 @@ class Optimizer(unittest.TestCase):
                              [DinnerGroup(7, [0, 0]), DinnerGroup(4, [1, 1]), DinnerGroup(2, [2, 2])]]
         test_solution = Solution(groups_per_course)
         paths_per_host = test_solution.get_paths_per_host()
-        expected_paths_per_host = {5: [5, 6, 7], 1: [1, 0, 4], 3: [3, 8, 2], 6: [5, 6, 7], 0: [1, 0, 4], 8: [3, 8, 2], 7: [5, 6, 7], 4: [1, 0, 4], 2: [3, 8, 2]}
+        expected_paths_per_host = {5: [5, 6, 7], 1: [1, 0, 4], 3: [3, 8, 2], 6: [5, 6, 7], 0: [1, 0, 4], 8: [3, 8, 2],
+                                   7: [5, 6, 7], 4: [1, 0, 4], 2: [3, 8, 2]}
         self.assertTrue(array_equal(expected_paths_per_host, paths_per_host))
 
     def test_get_paths_per_host_complex(self):
