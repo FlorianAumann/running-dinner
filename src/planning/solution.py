@@ -20,7 +20,7 @@ class DinnerGroup(object):
         self.guest_indices = guest_indices
 
     def __eq__(self, other: DinnerGroup):
-        return (self.cooking_team == other.cooking_team) and array_equal(self.groups_per_course, other.groups_per_course)
+        return (self.cooking_team == other.cooking_team) and array_equal(self.guest_indices, other.guest_indices)
 
     def __copy__(self):
         return type(self)(self.cooking_team, self.guest_indices)
