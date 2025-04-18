@@ -7,6 +7,7 @@ from numpy import array_equal
 from src.config import ConfigManager
 from src.data.geoLocation import GeoLocation
 from src.googleapi.googleApi import GoogleApi
+from src.planning.initializer import FinalLocationInitializer, RandomInitializer
 from src.planning.optimizer import GeneticOptimizerWithFinalLocation, COURSE_COUNT
 from src.planning.rating import DiversitySolutionRater, SolutionRater, CombinedSolutionRater, \
     FinalLocationDistanceSolutionRater, InterDistanceSolutionRater
@@ -150,3 +151,29 @@ class Rating(unittest.TestCase):
         paths_per_host = {5: [5, 6, 0], 1: [1, 7, 3], 4: [4, 2, 8], 6: [5, 6, 0], 7: [1, 7, 3], 2: [4, 2, 8],
                           0: [5, 6, 0], 3: [1, 7, 3], 8: [4, 2, 8]}
         self.assertAlmostEqual(rater.rate_solution(paths_per_host), 1, places=3)
+
+
+class Initializer(unittest.TestCase):
+    def test_initializer_random(self):
+        # Create a new initializer and create a solution for 18 teams and 3 courses
+        initializer = RandomInitializer()
+        initial_solution = initializer.create_initial_solution(18, 3)
+        # Test 1: Create a solution and make sure its valid
+        self.assertEqual(len(initial_solution.groups_per_course), 6)
+        self.assertEqual(len(initial_solution.groups_per_course[0]), 3)
+
+    def test_initializer_final_location(self):
+        # Create a new initializer and create a solution for 18 teams and 3 courses, along with a distance vector
+        dst_to_final_location = [63, 95, 96, 8, 99, 78, 63, 105, 52, 5, 88, 102, 3, 33, 57, 1, 200, 4]
+        initializer = FinalLocationInitializer(dst_to_final_location)
+        # Test 1: Make sure this raises an error on parameter mismatch
+        self.assertRaises(ValueError, initializer.create_initial_solution, 5, 3)
+        # Test 2: Create a solution and make sure its valid
+        initial_solution = initializer.create_initial_solution(18, 3)
+        self.assertEqual(len(initial_solution.groups_per_course), 6)
+        self.assertEqual(len(initial_solution.groups_per_course[0]), 3)
+        # Check cooking teams
+        # Flatten to 1D List and compare to expected
+        expected_cooking_teams = [16, 7, 11, 4, 2, 1, 10, 5, 0, 6, 14, 8, 13, 3, 9, 17, 12, 15]
+        actual_cooking_team = [x.cooking_team for row in initial_solution.groups_per_course for x in row]
+        self.assertTrue(array_equal(expected_cooking_teams, actual_cooking_team))
