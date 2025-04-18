@@ -1,3 +1,4 @@
+from __future__ import annotations
 from copy import deepcopy
 
 from numpy import array_equal
@@ -18,7 +19,7 @@ class DinnerGroup(object):
         self.cooking_team = cooking_team
         self.guest_indices = guest_indices
 
-    def __eq__(self, other):
+    def __eq__(self, other: DinnerGroup):
         return (self.cooking_team == other.cooking_team) and array_equal(self.groups_per_course, other.groups_per_course)
 
     def __copy__(self):
@@ -98,7 +99,7 @@ class Solution(object):
                         paths_per_host[host].append(self.groups_per_course[course_idx][host_index].cooking_team)
         return paths_per_host
 
-    def __eq__(self, other):
+    def __eq__(self, other: Solution):
         return array_equal(self.groups_per_course, other.groups_per_course)
 
     def __copy__(self):
