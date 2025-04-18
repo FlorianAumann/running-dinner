@@ -116,8 +116,8 @@ class Rating(unittest.TestCase):
                           7: [5, 6, 7], 4: [1, 0, 4], 2: [3, 8, 2]}
         self.assertAlmostEqual(rater.rate_solution(paths_per_host), 0, places=3)
         # Test #4 Rate best case 3 courses
-        paths_per_host = {0: [0, 1, 2], 1: [3, 1, 4], 2: [3, 5, 2], 3: [3, 6, 8], 4: [0, 5, 4], 5: [7, 5, 8],
-                          6: [0, 6, 8], 7: [7, 1, 4], 8: [7, 6, 2]}
+        paths_per_host = {5: [5, 2, 4], 6: [6, 7, 8], 0: [0, 1, 3], 2: [6, 2, 3], 7: [0, 7, 4], 1: [5, 1, 8],
+                          4: [6, 1, 4], 8: [0, 2, 8], 3: [5, 7, 3]}
         self.assertAlmostEqual(rater.rate_solution(paths_per_host), 1, places=3)
 
     def test_rate_inter_distance(self):
