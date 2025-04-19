@@ -1,8 +1,10 @@
 import sys
+import logging
 from abc import abstractmethod
 import random
 from copy import deepcopy
 
+from src import log
 from src.planning.initializer import Initializer
 from src.planning.rating import SolutionRater
 from src.planning.solution import Solution, SolutionWithScore
@@ -22,6 +24,7 @@ class Optimizer:
     def __init__(self, initializer: Initializer, rater: SolutionRater):
         self.initializer = initializer
         self.rater = rater
+        self.logger = log.setup_logger(__name__)
 
     @abstractmethod
     def optimize(self, team_count: int, course_count: int) -> [float]:
@@ -46,6 +49,7 @@ class GeneticOptimizer(Optimizer):
         :param course_count: The number of dinner courses
         :return: The optimal solution after optimization
         """
+        self.logger.info(f"Started optimization for {course_count} course(s) with {team_count} teams")
         # First, create initial guess for genetic algorithm
         current_generation = self._create_initial_generation(team_count, course_count)
 
@@ -57,12 +61,14 @@ class GeneticOptimizer(Optimizer):
             # If there is no change in n rounds, break
             if last_best_solution == current_generation[0].solution:
                 if no_changes_since >= ROUNDS_WITHOUT_CHANGE_TO_BREAK:
+                    self.logger.debug(f"No new solutions in {ROUNDS_WITHOUT_CHANGE_TO_BREAK} iteration(s). Exiting...")
                     break
                 else:
                     no_changes_since += 1
             else:
                 no_changes_since = 0
             last_best_solution = current_generation[0].solution
+        self.logger.info(f"Found solution with score {current_generation[0].score} in {iteration} iteration(s)")
         # Finally, return the best solution found in the optimization
         return current_generation[0].solution
 
@@ -185,4 +191,5 @@ class GeneticOptimizer(Optimizer):
         initial_rating = self._rate_solution(initial_guess)
         initial_generation = [SolutionWithScore(initial_guess, initial_rating) for i in
                               range(CANDIDATE_NUMBER_PER_GENERATION)]
+        self.logger.debug(f"Created {CANDIDATE_NUMBER_PER_GENERATION} initial solutions with rating {initial_rating}")
         return initial_generation
