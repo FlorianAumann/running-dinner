@@ -159,8 +159,8 @@ class Initializer(unittest.TestCase):
         initializer = RandomInitializer()
         initial_solution = initializer.create_initial_solution(18, 3)
         # Test 1: Create a solution and make sure its valid
-        self.assertEqual(len(initial_solution.groups_per_course), 6)
-        self.assertEqual(len(initial_solution.groups_per_course[0]), 3)
+        self.assertEqual(len(initial_solution.groups_per_course), 3)        # Check number of courses
+        self.assertEqual(len(initial_solution.groups_per_course[0]), 6)     # Check number of teams per course
 
     def test_initializer_final_location(self):
         # Create a new initializer and create a solution for 18 teams and 3 courses, along with a distance vector
@@ -170,8 +170,8 @@ class Initializer(unittest.TestCase):
         self.assertRaises(ValueError, initializer.create_initial_solution, 5, 3)
         # Test 2: Create a solution and make sure its valid
         initial_solution = initializer.create_initial_solution(18, 3)
-        self.assertEqual(len(initial_solution.groups_per_course), 6)
-        self.assertEqual(len(initial_solution.groups_per_course[0]), 3)
+        self.assertEqual(len(initial_solution.groups_per_course), 3)        # Check number of courses
+        self.assertEqual(len(initial_solution.groups_per_course[0]), 6)     # Check number of teams per course
         # Check cooking teams
         # Flatten to 1D List and compare to expected
         expected_cooking_teams = [16, 7, 11, 4, 2, 1, 10, 5, 0, 6, 14, 8, 13, 3, 9, 17, 12, 15]

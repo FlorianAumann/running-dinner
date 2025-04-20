@@ -35,11 +35,11 @@ class RandomInitializer(Initializer):
         # Create initial solution guess
         groups_per_course = []
         host_index = 0
-        for meal_group in range(meal_group_count):
+        for course in range(course_count):
             groups_per_course.append([])
-            for course in range(course_count):
-                guest_indices = [course for i in range(meal_group_count - 1)]
-                groups_per_course[meal_group].append(DinnerGroup(random_indices[host_index], guest_indices))
+            for meal_group in range(meal_group_count):
+                guest_indices = [meal_group for i in range(course_count - 1)]
+                groups_per_course[course].append(DinnerGroup(random_indices[host_index], guest_indices))
                 host_index += 1
         return Solution(groups_per_course)
 
@@ -71,10 +71,10 @@ class FinalLocationInitializer(Initializer):
         # Create initial solution guess
         groups_per_course = []
         host_index = 0
-        for meal_group in range(meal_group_count):
+        for course in range(course_count):
             groups_per_course.append([])
-            for course in range(course_count):
-                guest_indices = [course for i in range(meal_group_count - 1)]
-                groups_per_course[meal_group].append(DinnerGroup(sorted_indices[host_index], guest_indices))
+            for meal_group in range(meal_group_count):
+                guest_indices = [meal_group for i in range(course_count - 1)]
+                groups_per_course[course].append(DinnerGroup(sorted_indices[host_index], guest_indices))
                 host_index += 1
         return Solution(groups_per_course)

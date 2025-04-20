@@ -80,8 +80,8 @@ class DiversitySolutionRater(SolutionRater):
                     if len(intersections) > 1:
                         overlaps += (len(intersections) - 1)
         # Calculate the maximum overlaps possible for this solution size
-        course_count = len(paths_per_host[0])
-        teams_per_course_count = len(paths_per_host)
+        course_count = len(paths_per_host)
+        teams_per_course_count = len(paths_per_host[0])
         maximum_overlaps = (course_count - 1) * (course_count - 1) * teams_per_course_count
         # Normalize this score to be between 0 and 1
         # Then subtract it from 1.0, so it gets better the fewer overlaps we have
