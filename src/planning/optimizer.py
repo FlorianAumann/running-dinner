@@ -9,18 +9,13 @@ from src.planning.initializer import Initializer
 from src.planning.rating import SolutionRater
 from src.planning.solution import Solution, SolutionWithScore
 
-COURSE_COUNT = 3
-ROUNDS_WITHOUT_CHANGE_TO_BREAK = 3
-MUTATIONS_PER_SOLUTION = 5
-MAX_ITERATIONS = 50
-CANDIDATE_NUMBER_PER_GENERATION = 30
-
 
 class Optimizer:
     """
     Parent class for all optimizers, use the optimize method to find the best solution given the criterion defined
     by the SolutionRater.
     """
+
     def __init__(self, initializer: Initializer, rater: SolutionRater):
         self.initializer = initializer
         self.rater = rater
@@ -35,12 +30,22 @@ class GeneticOptimizer(Optimizer):
     """
     An optimizer using genetic optimization to find an optimal dinner configuration
     """
-    def __init__(self, initializer: Initializer, rater: SolutionRater):
+
+    def __init__(self, initializer: Initializer, rater: SolutionRater, max_iterations=50,
+                 candidate_number_per_generation=30, mutations_per_solution=5, rounds_without_change_to_break=3):
         """
         :param initializer: The initializer class to for the first solution generation
         :param rater: The rater class to calculate solution scores to optimize
+        :param max_iterations: Maximum iterations for optimization
+        :param candidate_number_per_generation: Number of candidate solution in a single generation
+        :param mutations_per_solution: Number of random mutations per round on each solution
+        :param rounds_without_change_to_break: Optimization will break prematurely if no changes occur in n rounds
         """
         super().__init__(initializer, rater)
+        self.max_iterations = max_iterations
+        self.candidate_number_per_generation = candidate_number_per_generation
+        self.mutations_per_solution = mutations_per_solution
+        self.rounds_without_change_to_break = rounds_without_change_to_break
 
     def optimize(self, team_count: int, course_count: int) -> Solution:
         """
@@ -56,12 +61,13 @@ class GeneticOptimizer(Optimizer):
         # Then, iterate and mutate the guess to optimize the solution
         last_best_solution = current_generation[0].solution
         no_changes_since = 0
-        for iteration in range(MAX_ITERATIONS):
+        for iteration in range(self.max_iterations):
             current_generation = self._create_new_generation(current_generation)
             # If there is no change in n rounds, break
             if last_best_solution == current_generation[0].solution:
-                if no_changes_since >= ROUNDS_WITHOUT_CHANGE_TO_BREAK:
-                    self.logger.debug(f"No new solutions in {ROUNDS_WITHOUT_CHANGE_TO_BREAK} iteration(s). Exiting...")
+                if no_changes_since >= self.rounds_without_change_to_break:
+                    self.logger.debug(
+                        f"No new solutions in {self.rounds_without_change_to_break} iteration(s). Exiting...")
                     break
                 else:
                     no_changes_since += 1
@@ -168,7 +174,7 @@ class GeneticOptimizer(Optimizer):
         # Mutate each solution from the previous generation n times and sort it into the new generation
         # If it gets a better score than any of the existing solution, it will be inserted into the solution list
         for solution in prev_gen:
-            for j in range(MUTATIONS_PER_SOLUTION):
+            for j in range(self.mutations_per_solution):
                 # Create a random mutation of our solution
                 mutated_solution = self._mutate_solution(solution.solution)
                 # Rate the new solution
@@ -190,6 +196,7 @@ class GeneticOptimizer(Optimizer):
         # Create a number of instances of the initial SolutionWithScore, so we can have a base generation
         initial_rating = self._rate_solution(initial_guess)
         initial_generation = [SolutionWithScore(initial_guess, initial_rating) for i in
-                              range(CANDIDATE_NUMBER_PER_GENERATION)]
-        self.logger.debug(f"Created {CANDIDATE_NUMBER_PER_GENERATION} initial solutions with rating {initial_rating}")
+                              range(self.candidate_number_per_generation)]
+        self.logger.debug(
+            f"Created {self.candidate_number_per_generation} initial solutions with rating {initial_rating}")
         return initial_generation
