@@ -69,19 +69,19 @@ class Solution(object):
         """
         paths_per_host = {}
         # For the cooking hosts in the first course group, we just use the indices the following courses to get their path
-        for group_idx in range(len(self.groups_per_course[0])):
+        for group_idx in range(self.number_of_groups_per_course()):
             paths_per_host[self.groups_per_course[0][group_idx].cooking_team] = [self.groups_per_course[0][group_idx].cooking_team]
-            for course_idx in range(1, len(self.groups_per_course)):
+            for course_idx in range(1, self.number_of_courses()):
                 paths_per_host[self.groups_per_course[0][group_idx].cooking_team].append(self.groups_per_course[course_idx][group_idx].cooking_team)
 
         # Iterate over all remaining courses and all groups in each course
-        for active_course_idx in range(1, len(self.groups_per_course)):
-            for group_idx in range(len(self.groups_per_course[active_course_idx])):
+        for active_course_idx in range(1, self.number_of_courses()):
+            for group_idx in range(self.number_of_groups_per_course()):
                 # For each of the cooking hosts in there, create a new empty list
                 host = self.groups_per_course[active_course_idx][group_idx].cooking_team
                 paths_per_host[host] = []
                 # Now iterate over all courses again to fill the path list for the current host
-                for course_idx in range(len(self.groups_per_course)):
+                for course_idx in range(self.number_of_courses()):
                     if course_idx == active_course_idx:
                         # In case the current course is also the active course index, the current team will be the one cooking
                         # -> Simply add its own index to the list
@@ -98,6 +98,19 @@ class Solution(object):
                         # Using this host index, look up which cooking team the current host will join for this course
                         paths_per_host[host].append(self.groups_per_course[course_idx][host_index].cooking_team)
         return paths_per_host
+
+    def number_of_courses(self) -> int:
+        return len(self.groups_per_course)
+
+    def number_of_groups_per_course(self) -> int:
+        # Assert that groups_per_course has at least one element since this checked in the constructor
+        assert(len(self.groups_per_course))
+        return len(self.groups_per_course[0])
+
+    def number_of_groups(self) -> int:
+        # Assert that groups_per_course has at least one element since this checked in the constructor
+        assert(len(self.groups_per_course))
+        return len(self.groups_per_course) * len(self.groups_per_course[0])
 
     def __eq__(self, other: Solution):
         return array_equal(self.groups_per_course, other.groups_per_course)

@@ -96,8 +96,8 @@ class GeneticOptimizer(Optimizer):
         """
         # Deepcopy the parent solution
         mutated_solution = deepcopy(parent_solution)
-        courses = len(mutated_solution.groups_per_course)
-        meal_group_count = len(mutated_solution.groups_per_course[0])
+        courses = mutated_solution.number_of_courses()
+        meal_group_count = mutated_solution.number_of_groups_per_course()
 
         # Swap dinner hosts with a change of 1/3
         mutate_dinner_hosts = (random.randint(0, 2) > 1)
