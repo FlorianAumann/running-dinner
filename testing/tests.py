@@ -8,7 +8,7 @@ from src.config import ConfigManager
 from src.data.geoLocation import GeoLocation
 from src.googleapi.googleApi import GoogleApi
 from src.planning.initializer import FinalLocationInitializer, RandomInitializer
-from src.planning.optimizer import GeneticOptimizerWithFinalLocation, COURSE_COUNT
+from src.planning.optimizer import GeneticOptimizer
 from src.planning.rating import DiversitySolutionRater, SolutionRater, CombinedSolutionRater, \
     FinalLocationDistanceSolutionRater, InterDistanceSolutionRater
 from src.planning.solution import DinnerGroup, Solution
@@ -177,3 +177,53 @@ class Initializer(unittest.TestCase):
         expected_cooking_teams = [16, 7, 11, 4, 2, 1, 10, 5, 0, 6, 14, 8, 13, 3, 9, 17, 12, 15]
         actual_cooking_team = [x.cooking_team for row in initial_solution.groups_per_course for x in row]
         self.assertTrue(array_equal(expected_cooking_teams, actual_cooking_team))
+
+
+class Optimizer(unittest.TestCase):
+    def test_optimization_simple(self):
+        # Use a combination of three rater classes
+        rater = DiversitySolutionRater()
+        # Use the final location initializer as initializer
+        initializer = RandomInitializer()
+        optimizer = GeneticOptimizer(initializer, rater)
+        solution = optimizer.optimize(12, 3)
+        # Check that the solution is formally correct
+        self.assertEqual(3, len(solution.groups_per_course))  # Check number of courses
+        self.assertEqual(4, len(solution.groups_per_course[0]))  # Check number of teams per course
+        # Get all cooking teams and make sure they occur exactly once
+        cooking_teams = [x.cooking_team for row in solution.groups_per_course for x in row]
+        cooking_teams.sort()
+        rater.rate_solution(solution.get_paths_per_host())
+        for i in range(len(cooking_teams)):
+            self.assertEqual(i, cooking_teams[i])
+        # This is a pretty simple optimization test, so we should always get a score or 100 %
+        self.assertAlmostEqual(rater.rate_solution(solution.get_paths_per_host()), 1, places=3)
+
+    def test_optimization_complex(self):
+        distance_matrix = [[0, 1, 2, 24, 35, 5, 22, 5, 1],
+                           [1, 0, 9, 9, 9, 9, 99, 9, 9],
+                           [2, 9, 0, 97, 97, 87, 97, 2, 33],
+                           [24, 9, 97, 0, 8, 8, 8, 8, 8],
+                           [35, 9, 97, 8, 0, 53, 63, 63, 63],
+                           [5, 9, 87, 8, 63, 0, 55, 54, 5],
+                           [22, 9, 97, 8, 63, 55, 0, 25, 99],
+                           [5, 9, 2, 8, 63, 54, 25, 0, 51],
+                           [1, 9, 33, 8, 63, 5, 99, 51, 0]]
+        dst_to_final_location = [96, 63, 96, 8, 63, 105, 99, 78, 52]
+        # Use a combination of three rater classes
+        rater1 = FinalLocationDistanceSolutionRater(dst_to_final_location, 3)
+        rater2 = InterDistanceSolutionRater(distance_matrix, 3)
+        rater3 = DiversitySolutionRater()
+        rater = CombinedSolutionRater([(1, rater1), (1, rater2), (1, rater3)])
+        # Use the final location initializer as initializer
+        initializer = FinalLocationInitializer(dst_to_final_location)
+        optimizer = GeneticOptimizer(initializer, rater)
+        solution = optimizer.optimize(9, 3)
+        # Check that the solution is formally correct
+        self.assertEqual(3, len(solution.groups_per_course))  # Check number of courses
+        self.assertEqual(3, len(solution.groups_per_course[0]))  # Check number of teams per course
+        # Get all cooking teams and make sure they occur exactly once
+        cooking_teams = [x.cooking_team for row in solution.groups_per_course for x in row]
+        cooking_teams.sort()
+        for i in range(len(cooking_teams)):
+            self.assertEqual(i, cooking_teams[i])
