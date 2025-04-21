@@ -157,10 +157,24 @@ class Initializer(unittest.TestCase):
     def test_initializer_random(self):
         # Create a new initializer and create a solution for 18 teams and 3 courses
         initializer = RandomInitializer()
-        initial_solution = initializer.create_initial_solution(18, 3)
-        # Test 1: Create a solution and make sure its valid
-        self.assertEqual(len(initial_solution.groups_per_course), 3)        # Check number of courses
-        self.assertEqual(len(initial_solution.groups_per_course[0]), 6)     # Check number of teams per course
+        # Test 1: Create a small solution and make sure its valid
+        number_of_courses = 2
+        initial_solution = initializer.create_initial_solution(2, number_of_courses)
+        self.assertEqual(initial_solution.number_of_courses(), number_of_courses)  # Check number of courses
+        self.assertEqual(initial_solution.number_of_groups_per_course(), 1)  # Check number of teams per course
+        # Make sure guest indices are number of courses minus one
+        for course in initial_solution.groups_per_course:
+            for group in course:
+                self.assertEqual(len(group.guest_indices), number_of_courses-1)
+        # Test 2: Create a larger solution and make sure its valid
+        number_of_courses = 3
+        initial_solution = initializer.create_initial_solution(18, number_of_courses)
+        self.assertEqual(initial_solution.number_of_courses(), number_of_courses)  # Check number of courses
+        self.assertEqual(initial_solution.number_of_groups_per_course(), 6)  # Check number of teams per course
+        # Make sure guest indices are number of courses minus one
+        for course in initial_solution.groups_per_course:
+            for group in course:
+                self.assertEqual(len(group.guest_indices), number_of_courses-1)
 
     def test_initializer_final_location(self):
         # Create a new initializer and create a solution for 18 teams and 3 courses, along with a distance vector
@@ -168,28 +182,53 @@ class Initializer(unittest.TestCase):
         initializer = FinalLocationInitializer(dst_to_final_location)
         # Test 1: Make sure this raises an error on parameter mismatch
         self.assertRaises(ValueError, initializer.create_initial_solution, 5, 3)
-        # Test 2: Create a solution and make sure its valid
-        initial_solution = initializer.create_initial_solution(18, 3)
-        self.assertEqual(len(initial_solution.groups_per_course), 3)        # Check number of courses
-        self.assertEqual(len(initial_solution.groups_per_course[0]), 6)     # Check number of teams per course
+        # Test 2: Create a larger solution and make sure its valid
+        number_of_courses = 3
+        initial_solution = initializer.create_initial_solution(18, number_of_courses)
+        self.assertEqual(initial_solution.number_of_courses(), 3)  # Check number of courses
+        self.assertEqual(initial_solution.number_of_groups_per_course(), 6)  # Check number of teams per course
         # Check cooking teams
         # Flatten to 1D List and compare to expected
         expected_cooking_teams = [16, 7, 11, 4, 2, 1, 10, 5, 0, 6, 14, 8, 13, 3, 9, 17, 12, 15]
         actual_cooking_team = [x.cooking_team for row in initial_solution.groups_per_course for x in row]
         self.assertTrue(array_equal(expected_cooking_teams, actual_cooking_team))
+        # Make sure guest indices are number of courses minus one
+        for course in initial_solution.groups_per_course:
+            for group in course:
+                # Make sure guest indices are number of courses minus one
+                self.assertEqual(len(group.guest_indices), number_of_courses-1)
 
 
 class Optimizer(unittest.TestCase):
-    def test_optimization_simple(self):
-        # Use a combination of three rater classes
+    def test_optimization_trivial(self):
+        # Use only the diversity rater here
         rater = DiversitySolutionRater()
         # Use the final location initializer as initializer
         initializer = RandomInitializer()
         optimizer = GeneticOptimizer(initializer, rater)
+        solution = optimizer.optimize(3, 3)
+        # Check that the solution is formally correct
+        self.assertEqual(3, solution.number_of_courses())  # Check number of courses
+        self.assertEqual(1, solution.number_of_groups_per_course())  # Check number of teams per course
+        # Get all cooking teams and make sure they occur exactly once
+        cooking_teams = [x.cooking_team for row in solution.groups_per_course for x in row]
+        cooking_teams.sort()
+        rater.rate_solution(solution.get_paths_per_host())
+        for i in range(len(cooking_teams)):
+            self.assertEqual(i, cooking_teams[i])
+        # This is a pretty simple optimization test, so we should always get a score or 100 %
+        self.assertAlmostEqual(rater.rate_solution(solution.get_paths_per_host()), 1, places=3)
+
+    def test_optimization_simple(self):
+        # Use only the diversity rater here
+        rater = DiversitySolutionRater()
+        # Use the random initializer as initializer
+        initializer = RandomInitializer()
+        optimizer = GeneticOptimizer(initializer, rater)
         solution = optimizer.optimize(12, 3)
         # Check that the solution is formally correct
-        self.assertEqual(3, len(solution.groups_per_course))  # Check number of courses
-        self.assertEqual(4, len(solution.groups_per_course[0]))  # Check number of teams per course
+        self.assertEqual(3, solution.number_of_courses())  # Check number of courses
+        self.assertEqual(4, solution.number_of_groups_per_course())  # Check number of teams per course
         # Get all cooking teams and make sure they occur exactly once
         cooking_teams = [x.cooking_team for row in solution.groups_per_course for x in row]
         cooking_teams.sort()
