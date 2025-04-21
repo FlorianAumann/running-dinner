@@ -101,6 +101,10 @@ class GeneticOptimizer(Optimizer):
 
         # Swap dinner hosts with a change of 1/3
         mutate_dinner_hosts = (random.randint(0, 2) > 1)
+        if meal_group_count == 1:
+            # Exception: If we only have one meal group per course, always mutate dinner hosts, since we can't
+            # swap the guest indices with anything else
+            mutate_dinner_hosts = True
         if mutate_dinner_hosts:
             # Mutation 1: Swap dinner hosts (33% chance)
             # Pick a random course and host to swap with another course and host
