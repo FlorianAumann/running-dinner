@@ -1,10 +1,12 @@
 import os
 import tempfile
 import unittest
+import random
 
 from numpy import array_equal
 
 from src.config import ConfigManager
+from src.dinnerPlanner import DinnerPlanner, RaterType
 from src.data.geoLocation import GeoLocation
 from src.googleapi.googleApi import GoogleApi
 from src.planning.initializer import FinalLocationInitializer, RandomInitializer
@@ -266,3 +268,39 @@ class Optimizer(unittest.TestCase):
         cooking_teams.sort()
         for i in range(len(cooking_teams)):
             self.assertEqual(i, cooking_teams[i])
+
+
+class DinnerPlan(unittest.TestCase):
+    class GoogleApiDummy(GoogleApi):
+        """
+        Dummy class inherited from GoogleApi
+        Instead of retrieving values from google api, this class will simply return a random value
+        This will help us test the DinnerPlan class without actually connecting to google api each time
+        """
+        def __init__(self, min_val: int, max_val: int):
+            self.min_val = min_val
+            self.max_val = max_val
+
+        def get_walking_duration(self, str_from: str, str_to: str) -> float:
+            return random.randint(self.min_val, self.max_val)
+
+    def setUp(self):
+        config_manager = ConfigManager()
+        self.config = config_manager.load_config()
+        self.google_api = DinnerPlan.GoogleApiDummy(1, 99)
+
+    def test_dinner_planner_simple(self):
+        # Simple use case with only three teams and one rating
+        dinner_planner = DinnerPlanner(self.google_api)
+        dinner_teams = read_teams_from_xlsx(os.getcwd() + "\\Test.xlsx")
+        paths_per_host = dinner_planner.plan_dinner(dinner_teams, [(1, RaterType.DIVERSITY)], 3)
+        self.assertEqual(len(dinner_teams), len(paths_per_host))
+
+    def test_dinner_planner_advanced(self):
+        # Advanced use case with 9 teams and three rating types
+        dinner_planner = DinnerPlanner(self.google_api)
+        dinner_teams = read_teams_from_xlsx(os.getcwd() + "\\TestAdvanced.xlsx")
+        raters = [(1, RaterType.DIVERSITY), (1, RaterType.WALKING_DIST), (2, RaterType.WALKING_DIST_FINAL)]
+        final_location = "2 Rue du Village, 03390 Saint-Priest-en-Murat, France"
+        paths_per_host = dinner_planner.plan_dinner(dinner_teams, raters, 3, final_location)
+        self.assertEqual(len(dinner_teams), len(paths_per_host))
