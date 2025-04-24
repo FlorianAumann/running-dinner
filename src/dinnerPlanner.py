@@ -71,7 +71,7 @@ class DinnerPlanner(object):
             final_dist_rater = FinalLocationDistanceSolutionRater(dist_to_final_location, teams_per_course)
             raters.append((final_dist_rater_type[0], final_dist_rater))
             # Also set the initializer to a final location initializer to get a better initial solution
-            initializer = FinalLocationInitializer(final_dist_rater)
+            initializer = FinalLocationInitializer(dist_to_final_location)
 
         # If initializer is not set at this point, use a Random initializer
         if initializer is None:
